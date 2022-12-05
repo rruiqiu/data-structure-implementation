@@ -1,0 +1,203 @@
+#include "HashTableLin.h"
+#include <iostream>
+#include<random>
+using namespace std;
+
+bool HashTableLin::isPrime(int num)
+{
+    if (num <= 1){return false;}
+
+    for (int i = 2; i < num; i++){
+        if (num % i == 0)
+            return false;
+    }
+    return true;
+
+}
+
+HashTableLin::HashTableLin(int maxNum, double load)
+{
+
+    size = int(ceil(maxNum / load));
+    setTableSize(size);
+    while (isPrime(size) != true)
+    {
+        size++;
+    }
+    setMaxLoadFactor(load);
+    table.resize(size);
+}
+
+void HashTableLin::insert(int n)
+{
+
+    if (double(keyNum + 1) / double(size) > load){
+        rehash();
+    }
+    int index = n % size;
+    if (table[index] != 0) {
+
+        if (table[index] == n) {
+            return;
+        }
+        while(table[index] != 0) {
+            index = (index + 1) % size;
+        }
+        table[index] = n;
+    }
+    else {
+        table[index] = n;
+    }
+    keyNum++;
+    //if (maxNum < keyNum) {
+    //    rehash();
+    //}
+    //if (keyNum >= size) {
+    //    rehash();
+    //}
+}
+
+void HashTableLin::rehash()
+{
+    std::vector<int> newtable = table;
+    size = size * 2; 
+    
+    while (isPrime(size)!= true) {
+        size++;
+    }
+
+    table.clear();
+    table.resize(size);
+    keyNum = 0;
+
+    for (int i = 0; i < newtable.size(); i++) { 
+        if (newtable[i] != 0) {
+            insert(newtable[i]);
+        }
+    }
+
+}
+
+bool HashTableLin::isIn(int n)
+{
+    int index = n % size;
+    while (table[index] != 0) {
+        if (table[index] == n) {
+            return true;
+        }
+        index = (index + 1) % size;
+    }
+    return false;
+    //if (table[index] != 0) {
+    //    if (table[index] == n) {
+    //        return true;
+    //    }
+    //    while (table[index] != n) {
+    //        index = (index + 1) % size;
+    //        if (table[index] == n) {
+    //            return true;
+    //        }
+    //        if (index == n % size) {
+    //            return false;
+    //        }
+    //    }
+    //}
+    //else{ 
+    //    return false; 
+    //}
+}
+
+void HashTableLin::printKeys()
+{
+    for (int i = 0; i < size; i++) {
+        if (table[i] != 0) {
+            cout << table[i] << " ";
+        }
+    }
+    cout << endl;
+}
+
+void HashTableLin::printKeysAndIndexes()
+{
+    for (int i = 0; i < size; i++) {
+        if (table[i] != 0) {
+            cout << "index:" << i << " key:" << table[i] << " " << endl;
+        }
+    }
+    cout << endl;
+}
+
+int HashTableLin::getNumKeys() {
+    return keyNum;
+}
+
+int HashTableLin::getTableSize() {
+    return size;
+}
+
+double HashTableLin::getMaxLoadFactor() {
+    return load;
+}
+
+double HashTableLin::insertCount(int n) {
+    int index = n % size;
+    double countprobes = 0;
+    if (table[index] != 0) {
+        if (table[index] == n) {
+            return 0;
+        }
+        while (table[index] != 0) {
+            countprobes++;
+            index = (index + 1) % size;
+        }
+        table[index] = n;
+        countprobes++;
+        keyNum++;
+    }
+    else {
+        table[index] = n;
+        countprobes++;
+        keyNum++;
+    }
+    return countprobes;
+}
+
+
+std::vector<double> HashTableLin::simProbeSuccess()
+{
+    vector<double> result(9);
+    int max_size = 100000;
+    int random_list [100000];
+    double final_probe = 0;
+
+    //generate a 100000 random list
+    for (int i = 0; i < max_size; i++) {
+        int random;
+        random = (rand() * rand());  //rand_max constant is 32767, so we can multiply them to get a pseudo random number without repitions within the 100,000 list size
+        random_list[i] = random;
+    }
+
+    std::vector<double> l = { 0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9 };
+    double before_probes = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        double temp = 0.0;
+
+        for (int k = 0; k < 100; k++) {
+            HashTableLin test_table(max_size, l[i]);
+            for (int j = 0; j < 100000; j++) {
+                temp += test_table.insertCount(random_list[j])/100000; //calculate the average for each probe
+            }
+        }
+        final_probe = temp / 100;
+        result[i] = final_probe;
+    }
+    return result;
+}
+
+// for bonus
+std::vector<double> HashTableLin::simProbeUnsuccess()
+{
+    vector<double> result(9);
+    return result;
+}

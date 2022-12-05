@@ -1,0 +1,29 @@
+#ifndef HUGEINTEGER_H_
+#define HUGEINTEGER_H_
+#include <iostream>
+#include <vector>
+#include <string>
+using namespace std;
+
+class HugeInteger
+{
+private:
+	std::vector<int> digits;
+	bool negative;
+
+public:
+	HugeInteger(const std::string& val);
+	HugeInteger(int n);
+	HugeInteger add(const HugeInteger& h, bool sign = false) const;
+	HugeInteger subtract(const HugeInteger& h, bool sign = false) const;
+	HugeInteger multiply(const HugeInteger& h);
+	int compareTo(const HugeInteger& h) const;
+	int compareToUnsigned(const HugeInteger& h) const;
+	std::string toString();
+	HugeInteger minus();
+};
+
+#endif /* HUGEINTEGER_H_ */
+
+
+

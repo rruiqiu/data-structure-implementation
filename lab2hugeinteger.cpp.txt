@@ -1,0 +1,253 @@
+#include "HugeInteger.h"
+
+HugeInteger::HugeInteger(const std::string& val) {
+	int i = 0;//set the first sign to positive
+	if (val.size() == 0) {
+		throw std::invalid_argument("invalid input");
+	}
+
+	if (val[0] == '-') {
+		negative = 1; //if true
+		i = 1; //plus one space
+	}
+	if (val[i] == 0) { throw std::invalid_argument("invalid input"); }//the first num is non-zero
+
+	for (i; i < val.size(); i++) { //start the iteration
+		if (isdigit(val[i]) == 0) { //check each digit is 0-9
+			throw std::invalid_argument("invalid input");
+		}
+		digits.push_back(val[i] - 48);//48 = '0', convert string to integer by subtracting ASCII-48(0) 
+
+	}
+}
+
+
+
+HugeInteger::HugeInteger(int n) {
+	if (n < 1) {
+		throw std::invalid_argument("invalid input"); 
+	}
+	digits.push_back(rand() % 9 + 1);
+	for (int digit = 1; digit < n; digit++){
+		digits.push_back(rand() % 10);
+	}
+}
+
+
+HugeInteger HugeInteger::add(const HugeInteger& h, bool sign)const {
+	if (sign == false) {//sign starts with 0 to check, perform each opeation when sign is true
+		if (!negative && h.negative) {//positive + h.negative will return positive - negative
+			return subtract(h, true);
+		}
+		if (negative && !h.negative) {//negative + h.positive will return h.positive - negative
+			return h.subtract(*this, true);
+		}
+	}
+
+	int size = (h.digits.size() >= digits.size()) ? h.digits.size() : digits.size();//determine size is equal to the larger number
+	HugeInteger result = HugeInteger("0");//create new hugeintegers to store the last result
+	for (int i = 0; i < size - 1; i++){
+		result.digits.push_back(0);
+	}
+
+	if (negative && h.negative) result.negative = true;//both negative numbers will return a negative number
+	
+	int carry = 0, temp;
+	int i = (h.digits).size() - 1;
+	int j = (digits).size() - 1;
+
+
+	/*Add each of them starting at the end
+	Two integers are of unequal length (one must have been added, and the other must have been added)
+	There's a carry at the top, so we have to carry one more
+	Result string in reverse order*/
+	vector<int> answer; //make an empty vector store the reversed sum
+	while (i >= 0 && j >= 0) {
+		temp = (h.digits)[i] + (digits)[j] + carry;
+		answer.push_back(temp % 10);
+		carry = temp / 10;
+		i--, j--;
+	}
+	for (i; i >= 0; i--)
+	{
+		temp = (h.digits)[i] + carry;
+		answer.push_back(temp % 10);
+		carry = temp / 10;
+	}
+	for (j; j >= 0; j--)
+	{
+		temp = (digits)[j] + carry;
+		answer.push_back(temp % 10);
+		carry = temp / 10;
+	}
+	if (carry) {
+		answer.push_back(carry);
+	}
+	reverse(answer.begin(), answer.end());
+	result.digits = answer;
+	return result;
+}
+
+HugeInteger HugeInteger::subtract(const HugeInteger& h, bool sign) const {
+	if (sign == 0) {
+		if (!negative && h.negative) return add(h, true);//positive - negative = pos+negative
+		if (negative && !h.negative) return add(h, true).minus();//neg-pos = -(pos+pos)
+		if (negative && h.negative){//neg-h.neg=h.neg-pos
+			HugeInteger finalresult = h.subtract(*this, true);
+			//-5 - (-2) = -3
+			if (h.compareToUnsigned(*this) == 1) finalresult.minus();//if the digits is smaller, add a minus sign
+			return finalresult;
+		}
+	}
+
+	const HugeInteger& larger = compareToUnsigned(h) == 1 ? *this: h; //make a copy the bigger digits, and give the smaller one minus sign
+	const HugeInteger& smaller = compareToUnsigned(h) == 1 ? h: *this; //make a copy of the smaller digits,  and give the smaller one minus sign
+
+	int largersize = larger.digits.size();
+	int borrow = 0, diff, index, smallIndex;
+
+	HugeInteger finalresult = HugeInteger("0");//create new hugeintegers to store the last result
+	for (int i = 0; i < largersize - 1; i++) finalresult.digits.push_back(0);
+
+	if (larger.negative) finalresult.negative = true;//if the larger value is negative, the result must be negative
+	if (compareTo(h) == -1) finalresult.negative = true;//if h size is larger than this
+
+	/* Use the large number to do subtractions (judge the size first),
+	start from the low digit,
+	note that when the subtraction is not enough to borrow the high number!
+	*/
+	for (diff = 1; diff <= largersize; diff++) {
+		index = largersize - diff;
+		smallIndex = smaller.digits.size() - diff;
+		if (smallIndex >= 0) {
+			if (larger.digits[index] >= smaller.digits[smallIndex] + borrow) {
+				finalresult.digits[index] = larger.digits[index] - smaller.digits[smallIndex] - borrow;
+				borrow = 0;
+			}
+			else {
+				finalresult.digits[index] = larger.digits[index] + 10 - smaller.digits[smallIndex] - borrow;
+				borrow = 1;
+			}
+		}
+		else {
+			if (larger.digits[index] >= borrow) {
+				finalresult.digits[index] = larger.digits[index] - borrow;
+				borrow = 0;
+			}
+			else {
+				finalresult.digits[index] = larger.digits[index] + 10 - borrow;
+				borrow = 1;
+			}
+		}
+	}
+
+	while (finalresult.digits.size() > 1 && finalresult.digits[0] == 0){
+		finalresult.digits.erase(finalresult.digits.begin());//erase the first digit if it is 0
+	}
+
+	if (finalresult.digits[0] == 0) finalresult.negative = false;//make the result be positive when it is 0
+	return finalresult;
+}
+
+
+HugeInteger HugeInteger::multiply(const HugeInteger& h){
+
+	const HugeInteger& larger = compareToUnsigned(h) == 1 ? *this : h; //make a copy the bigger digits, and give the smaller one minus sign
+	const HugeInteger& smaller = compareToUnsigned(h) == 1 ? h : *this; //make a copy of the smaller digits,  and give the smaller one minus sign
+
+	HugeInteger result = HugeInteger("0");
+	for (int i = 0; i < larger.digits.size() - 1; i++) result.digits.push_back(0);
+
+	/*
+	Multiply the decimal by a large number (judging the size first), 
+	starting from the low digit, multiply the low digit of the large number by the complete decimal every time, 
+	and place the remainder of 10 in the corresponding position of the result. Divide by 10
+	 */
+	int carry = 0, shift, diff, smallIndex, bigIndex;
+	for (shift = 1; shift <= smaller.digits.size(); shift++){
+		smallIndex = smaller.digits.size() - shift;
+
+		HugeInteger product = HugeInteger("0");//create new hugeintegers to store the last result
+		for (int i = 0; i < larger.digits.size() - 1; i++) product.digits.push_back(0);
+
+		for (diff = 1; diff <= larger.digits.size(); diff++){
+			bigIndex = larger.digits.size() - diff;
+
+			product.digits[bigIndex] = larger.digits[bigIndex] * smaller.digits[smallIndex] + carry;
+
+			if (product.digits[bigIndex] > 9){
+				carry = product.digits[bigIndex] / 10;
+				product.digits[bigIndex] %= 10;
+			}
+		}
+
+		if (carry) {
+			product.digits.insert(product.digits.begin(), carry);
+			carry = 0;
+		}
+
+		for (int i = 0; i < shift - 1; i++) {
+			product.digits.push_back(0);
+		}
+		result = result.add(product);
+	}
+
+	while (result.digits.size() > 1 && result.digits[0] == 0) {
+		result.digits.erase(result.digits.begin());//erase the first digit if it is 0
+	}
+
+	// Set the sign of the result.
+	if (negative && !h.negative) result.negative = true;//neg*pos=neg
+	if (!negative && h.negative) result.negative = true;//pos*neg=neg
+
+	if (result.digits[0] == 0) result.negative = false;//make the result be positive when it is 0
+	return result;
+}
+
+
+int HugeInteger::compareTo(const HugeInteger& h) const {//compare this and h, return1 when this is larger vice versa
+
+	if (!negative && h.negative) return 1; //this.positive and h.negative, return 1
+	if (negative && !h.negative) return -1; //this.negative and h.positive, return -1
+
+	if (digits.size() > h.digits.size()) return (negative ? -1 : 1);//this.digits longer than h.digits,if negative, h.digits larger return -1
+	if (digits.size() < h.digits.size()) return (negative ? 1 : -1);//this digits shorter than  h.digits,if negative, this digtis larger return 1
+
+	//Compare each digit value and return true or false based on their sign
+	for (int i = 0; i < digits.size(); i++) {
+		if (digits[i] > h.digits[i]) return (negative ? -1 : 1);
+		if (digits[i] < h.digits[i]) return (negative ? 1 : -1);
+	}
+	return 0;//they are equal
+}
+
+int HugeInteger::compareToUnsigned(const HugeInteger& h) const {// use to compare their absolute values
+	if (digits.size() > h.digits.size()) {
+		return 1;
+	}
+	if (digits.size() < h.digits.size()) {
+		return -1;
+	}
+	for (int i = 0; i < digits.size(); i++){
+		if (digits[i] > h.digits[i]) return 1;
+		if (digits[i] < h.digits[i]) return -1;
+	}
+	return 0;
+}
+
+std::string HugeInteger::toString(){
+	string result;
+	if(negative){
+		result.push_back('-');//negative sign
+	}
+	for (int i = 0; i < digits.size(); i++) {
+		result += digits[i] + 48; //convert into string into ASCII, 48 = '0'
+	}
+	return result;
+}
+
+
+HugeInteger HugeInteger::minus() { //reverse the sign of this number and return its digits
+	negative = !negative;
+	return *this;
+}

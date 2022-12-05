@@ -1,0 +1,198 @@
+#include "HugeInteger.h"
+#include <vector>
+
+HugeInteger::HugeInteger(const std::string& val) 
+
+{
+	if (val == "") //if empty string
+	{
+		throw std::invalid_argument("unaccaptable input");
+	}
+
+	if (val[0] == '-')//if the beginning is negative
+	{
+		//negative = true;
+		sign = -1;
+		size++; //the size of the string plus 1,handle the negative value
+		if (val[1] == '0') //if it is -0, invalid
+		{
+			throw std::invalid_argument("unaccaptable input");
+		}
+	}
+
+	while (val[size] != '\0')//itterate till the end of the string
+	{
+		if (int(val[size]) >= 48 && int(val[size]) <= 57) //0-9
+		{
+			num.push_back((int)val[size] - 48); //the value of each digit minus 0, push back to the vector
+
+			size++;//move digtis behind
+		}
+		else //non integers will throw  an exception
+		{
+			throw std::invalid_argument("unaccaptable input");
+		}
+	}
+
+	if (sign == -1)//if negative
+
+	{
+		size--;//the size will minus one if it is negative
+	}
+
+}
+
+HugeInteger::HugeInteger(int n)
+
+{
+	if (n <= 0)//throw an exception if n is smaller than 0
+	{
+		throw std::invalid_argument("unaccaptable input");
+	}
+	for (int i = 0; i < n; i++)
+	{
+		if (i == 0)
+		{
+			num.push_back(rand() % 9 + 1);//1-9, the first digit is non-zero
+			size++;
+			//continue;
+		}
+		else
+		{
+			num.push_back(rand() % 10);//0-9
+			size++;
+		}
+	}
+}
+
+void HugeInteger::reverse()
+
+{
+	vector<int>::iterator first = this->num.begin();
+	vector<int>::iterator last = this->num.end();
+	while ((first != last) && (first != --last))
+	{
+		std::iter_swap(first, last);
+		++first;
+	}
+}
+
+HugeInteger HugeInteger::add(const HugeInteger& h)
+
+{	
+	HugeInteger result(1);
+	result.size--;
+	result.num.erase(result.num.begin());
+
+	int large_vector_size = size;
+	int small_vector_size = h.size;
+	int working_sum;
+	int carry = 0;
+	int size_diff = large_vector_size - small_vector_size;
+
+	if (h.size > size) //if vector h is larger
+	{
+		large_vector_size = h.size;
+		small_vector_size = size;
+		size_diff = large_vector_size - small_vector_size;
+
+		for (int i = large_vector_size - 1; i >= 0; i--) //iterate the  larger vector size
+		{
+			if (i - size_diff >= 0)
+			{
+				working_sum = num[i - size_diff] + h.num[i] + carry;
+				carry = working_sum / 10;
+				working_sum = working_sum % 10;
+				result.num.push_back(working_sum);
+				result.size++;
+			}
+			else
+			{
+				working_sum = h.num[i] + carry;
+				carry = working_sum / 10;
+				working_sum = working_sum % 10;
+				result.num.push_back(working_sum);
+				result.size++;
+			}
+		}
+
+		if (carry == 1)
+		{
+			result.num.push_back(1);
+			result.size++;
+		}
+		result.reverse(); 
+		return result;
+	}
+
+	for (int i = large_vector_size - 1; i >= 0; i--) //if this is the larger one
+	{
+		if (i - size_diff >= 0)
+		{
+			working_sum = h.num[i - size_diff] + num[i] + carry;
+			carry = working_sum / 10;
+			working_sum = working_sum % 10;
+			result.num.push_back(working_sum);
+			result.size++;
+		}
+		else
+		{
+			working_sum = num[i] + carry;
+			carry = working_sum / 10;
+			working_sum = working_sum % 10;
+			result.num.push_back(working_sum);
+			result.size++;
+		}
+	}
+
+	if (carry == 1)
+	{
+		result.num.push_back(1);
+		result.size++;
+	}
+	result.reverse();
+	return result;
+}
+
+HugeInteger HugeInteger::subtract(const HugeInteger& h)
+
+{
+
+	return HugeInteger("");
+}
+
+HugeInteger HugeInteger::multiply(const HugeInteger& h)
+
+{
+
+	// TODO
+
+	return HugeInteger("");
+}
+
+int HugeInteger::compareTo(const HugeInteger& h)
+
+{
+
+	// TODO
+
+	return 0;
+}
+
+
+
+std::string HugeInteger::toString()
+{
+	string result;
+	if (sign == -1)
+	{
+		result.push_back('-');//negative sign
+	}
+
+	for (int i = 0; i < size; i++)
+	{
+		result.push_back(char(this->num[i] + 48));
+	}
+	return result;
+}
+

@@ -1,0 +1,217 @@
+#include "HashTableQuad.h"
+#include <iostream>
+using namespace std;
+
+bool HashTableQuad::isPrime(int num)
+
+{
+    if (num <= 1)
+        return false;
+
+    // Check from 2 to n-1
+    for (int i = 2; i < num; i++)
+        if (num % i == 0)
+            return false;
+
+    return true;
+
+}
+
+HashTableQuad::HashTableQuad(int maxNum, double load)
+{
+    size = int(ceil(maxNum / load));
+    setTableSize(size);
+    while (isPrime(size) != true)
+    {
+        size++;
+    }
+    setMaxLoadFactor(load);
+    table.resize(size);
+}
+
+bool HashTableQuad::occupied(int n)
+{
+    int index = n % size; //n mode size
+    int count = 0;
+    if (table[index] == n) {
+        return false;
+    }
+    else{
+        while(table[index] != 0){
+            index = ((n % size) + count * count) % size;
+            if (count != 0 && (index + count * count)%size == index){ //determine if it is occupied for a circular
+                return false;
+            }
+            count++;
+        }
+        return true;
+    }
+}
+
+void HashTableQuad::insert(int n)
+{
+    if(occupied(n) == false) {
+        return;
+    }
+    else if (double(keyNum + 1) / double(size) > load) {   //if the table is full
+        rehash();
+    }
+    int index = n % size;
+    int count = 1;
+    if (table[index] != 0) {
+        if (table[index] == n) {
+            return;
+        }
+
+        while (table[index] != 0){
+            index = ((n % size) + count * count) % size; //collision for quadratic
+            count++;
+        }
+        table[index] = n;
+        if (index >= size) {
+            rehash();
+        }
+    }
+    else {
+        table[index] = n;
+    }
+    keyNum++;
+    if (keyNum >= size) {
+        rehash();
+    }
+}
+
+void HashTableQuad::rehash()
+{
+    std::vector<int> newtable = table;
+    size = size * 2;
+
+    while (isPrime(size) != true) {
+        size++;
+    }
+
+    table.clear();
+    table.resize(size);
+    keyNum = 0;
+
+    for (int i = 0; i < newtable.size(); i++) {
+        if (newtable[i] != 0){
+            insert(newtable[i]);
+        }
+    }
+}
+
+bool HashTableQuad::isIn(int n)
+{
+    int index = n % size;
+    int count = 1;
+    if (table[index] != 0) {
+        if (table[index] == n) {
+            return true;
+        }
+        while (table[index] != n) {
+            index = ((n % size) + count * count) % size;
+            count++;
+            if (table[index] == n) {
+                return true;
+            }
+            if (index == n % size) {
+                return false;
+            }
+        }
+    }
+    else {
+        return false;
+    }
+}
+
+void HashTableQuad::printKeys()
+{
+    for (int i = 0; i < size; i++) {
+        if (table[i] != 0) {
+            cout << table[i] << " ";
+        }
+    }
+    cout << endl;
+}
+
+void HashTableQuad::printKeysAndIndexes()
+{
+    for (int i = 0; i < size; i++) {
+        if (table[i] != 0) {
+            cout << "index:" << i << " key:" << table[i] << " " << endl;
+        }
+    }
+    cout << endl;
+}
+
+int HashTableQuad::getNumKeys() {
+	// TODO, change following code after completing this function
+    return keyNum;
+}
+
+int HashTableQuad::getTableSize() {
+	// TODO, change following code after completing this function
+    return size;
+}
+
+double HashTableQuad::getMaxLoadFactor() {
+	// TODO, change following code after completing this function
+    return load;
+}
+double HashTableQuad::insertCount(int n){
+    int index = n % size;
+    int count = 1;
+    double countprobes = 0;
+    if (table[index] != 0) {
+        if (table[index] == n) {
+            return 0;
+        }
+        while (table[index] != 0) {
+            countprobes++;
+            index = ((n % size) + count * count) % size; //collision for quadratic
+            count++;
+        }
+        table[index] = n;
+        countprobes++;
+        keyNum++;
+    }
+    else {
+        table[index] = n;
+        countprobes++;
+        keyNum++;
+    }
+    return countprobes;
+}
+
+std::vector<double> HashTableQuad::simProbeSuccess()
+{
+    vector<double> result(9);
+    int max_size = 100000;
+    int random_list[100000];
+    double final_probe = 0;
+
+    //generate a 100000 random list
+    for (int i = 0; i < max_size; i++) {
+        int random;
+        random = (rand() * rand());  //rand_max constant is 32767, so we can multiply them to get a pseudo random number without repitions within the 100,000 list size
+        random_list[i] = random;
+    }
+
+    std::vector<double> l = { 0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9 };
+    double before_probes = 0;
+    for (int i = 0; i < 9; i++)
+    {
+        double temp = 0.0;
+
+        for (int k = 0; k < 100; k++) {
+            HashTableQuad test_table(max_size, l[i]);
+            for (int j = 0; j < 100000; j++) {
+                temp += test_table.insertCount(random_list[j]) / 100000; //calculate the average for each probe
+            }
+        }
+        final_probe = temp / 100;
+        result[i] = final_probe;
+    }
+    return result;
+}

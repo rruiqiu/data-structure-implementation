@@ -1,0 +1,402 @@
+#include "BSTSet.h"
+#include "Stack.cpp"
+#include <iostream>
+#include <vector>
+using namespace std;
+
+
+/*
+Setting tree as empty
+*/
+BSTSet::BSTSet()
+{
+	root == NULL;
+}
+
+
+/*
+time complexity theta(nlogn)
+*/
+BSTSet::BSTSet(const std::vector<int>& input)
+
+{
+	for (int i = 0; i < input.size(); i++) {
+		add(input[i]);
+	}
+}
+
+BSTSet::~BSTSet()
+{
+    delete(root);
+}
+
+
+/*
+return true if an element is in else false
+*/
+bool BSTSet::isIn(int v)const
+{
+	return isInTree(root, v);
+}
+
+/*
+IsinTree code from class
+theta logn
+*/
+bool BSTSet::isInTree(TNode* t, int v) const
+{
+	if (t == NULL) {
+		return false;
+	}
+	else if	(v < t->element) {
+		return isInTree(t->left, v);
+	}
+	else if (v > t->element){
+		return isInTree(t->right, v);
+	}
+	else{
+		return true;
+	}
+}
+
+
+
+
+void BSTSet::add(int v)
+{
+	insert(root,v);
+}
+
+
+/*
+theta log(n)
+*/
+void BSTSet::insert(TNode* t, int v) {
+    if (root == NULL) {
+        root = new TNode(v, NULL, NULL);
+    }
+
+    if (!isIn(v)){
+        if (v < t->element && t->left == NULL) {
+            t->left = new TNode(v, NULL, NULL);
+        }
+        else if (v > t->element && t->right == NULL) {
+            t->right = new TNode(v, NULL, NULL);
+        }
+        else {
+            if (v < t->element) {
+                insert(t->left, v);
+            }
+            else if (v > t->element) {
+                insert(t->right, v);
+            }
+            else;
+        }
+    }
+}
+
+/*
+theta(logn) on average
+*/
+bool BSTSet::remove(int v)
+{
+    if (root == NULL) {
+        return false;
+    }
+
+    TNode* ptr1 = NULL;
+    TNode* ptr2 = root;
+
+    //find the corresponding element address
+    while (ptr2 != NULL) {
+        if (ptr2->element == v) break;
+
+        ptr1 = ptr2;
+        if (ptr2->element > v) {
+            ptr2 = ptr2->left;
+        }
+        else {
+            ptr2 = ptr2->right;
+        }
+    }
+    //return false if not found
+    if (ptr2 == NULL){
+        return false;
+    }
+
+    if (ptr2->left == NULL && ptr2->right == NULL) {
+        //remove the root
+        if (ptr1 == NULL) {
+            root = NULL;
+        }
+        //remove the leaf
+        else {
+            if (ptr1->right && ptr1->right->element == v) {
+                ptr1->right = NULL;
+            }
+            else {
+                ptr1->left = NULL;
+            }
+        }
+        delete ptr2;
+        return true;
+    }
+    else if (ptr2->left == NULL) {
+        findMin(ptr2);
+        return true;
+    }
+    else if (ptr2->right == NULL) {
+        findMax(ptr2);
+        return true;
+    }
+    else {
+        findMin(ptr2);
+        return true;
+    }
+}
+
+void BSTSet::findMin(TNode* curr) {
+    TNode* ptr1 = curr;
+    TNode* ptr2 = curr->right;
+
+    if (ptr2 == NULL) return findMax(curr); //if it is right is NULL
+
+    while (ptr2->left != NULL){
+        ptr1 = ptr2;
+        ptr2 = ptr2->left;
+    }
+
+    if (ptr2->right != NULL) {
+        if (ptr1->element > ptr2->element) {
+            ptr1->left = ptr2->right;
+        }
+        else {
+            ptr1->right = ptr2->right;
+        }
+    }
+    else {
+        if (ptr1->element > ptr2->element) {
+            ptr1->left = NULL;
+        }
+        else {
+            ptr1->right = NULL;
+        }
+    }
+    curr->element = ptr2->element;
+}
+
+void BSTSet::findMax(TNode* curr) {
+    TNode* ptr1 = curr;
+    TNode* ptr2 = curr->left;
+
+    if (ptr2 == NULL) {
+        return findMin(curr);
+    }
+
+    while (ptr2->right) {
+        ptr1 = ptr2;
+        ptr2 = ptr2->right;
+    }
+
+    if (ptr2->left) {
+        if (ptr1->element > ptr2->element) {
+            ptr1->left = ptr2->left;
+        }
+        else {
+            ptr1->right = ptr2->left;
+        }
+    }
+    else {
+        if (ptr1->element > ptr2->element) {
+            ptr1->left = NULL;
+        }
+        else {
+            ptr1->right = NULL;
+        }
+    }
+    curr->element = ptr2->element;
+}
+
+
+/*
+theta nlogn
+create a stack to push each element into the stack and use 
+add function to insert them without repitions
+*/
+void BSTSet::Union(const BSTSet& s)
+{
+    Stack<TNode*> Stack;
+    Stack.push(s.root);
+    TNode* curr;
+    while (!Stack.isEmpty()) {
+        curr = Stack.pop();
+        Stack.push(curr->left);
+        Stack.push(curr->right);
+        add(curr->element);
+    }
+}
+
+/*
+theta nlogn
+create a stack to push each element of BSTset into the stack and use the remove
+function to remove the elment that is not exist in both sets
+*/
+void BSTSet::intersection(const BSTSet& s)
+{
+    if (root == NULL) return;
+    std::vector<int> node;
+    Stack<TNode*> Stack;
+    Stack.push(root);
+    TNode* curr;
+    while (Stack.isEmpty()==false) {
+        curr = Stack.pop();
+        Stack.push(curr->left);
+        Stack.push(curr->right);
+        if (s.isIn(curr->element)==false) {//if s does not contain an element in the BSTset,push back to the vector and delete
+            node.push_back(curr->element);
+        }
+    }
+    for (int i = 0; i < node.size(); i++) {
+        remove(node[i]);
+    }
+}
+
+/*
+theta nlogn
+create a stack to push each element of BSTset into the stack and use the remove
+function to remove the elment that is not exist in both sets
+*/
+void BSTSet::difference(const BSTSet& s)
+{
+    std::vector<int> node;
+    Stack<TNode*> Stack;
+    Stack.push(root);
+    TNode* ptr1;
+    while (!Stack.isEmpty()) {
+        ptr1 = Stack.pop();
+        Stack.push(ptr1->left);
+        Stack.push(ptr1->right);
+        if (s.isIn(ptr1->element)==true) {//if s contains an element in the BSTset,push back to the vector and delete
+            node.push_back(ptr1->element);
+        }
+    }
+    for (int i = 0; i < node.size(); i++) {
+        remove(node[i]);
+    }
+}
+
+
+/*
+theta(n)
+create a queue to store each element of the BSTSet, 
+perform deque at the front each operation will be counter a size++ to store the number of elements
+*/
+int BSTSet::size()
+{
+    if (root == NULL) {
+        return 0;
+    }
+    std::vector<TNode*> vec;
+    vec.push_back(root);
+
+    int size = 1, count = 0;
+
+    TNode* ptr1;
+    while (vec.empty() == false) {
+        count = vec.size();
+        while (count > 0) {
+            ptr1 = vec.front();
+            vec.erase(vec.begin());
+            if (ptr1->left != NULL) {
+                vec.push_back(ptr1->left);
+                size++;
+            }
+            if (ptr1->right != NULL) {
+                vec.push_back(ptr1->right);
+                size++;
+            }
+            count--;
+        }
+    }
+    return size;
+}
+/*
+theta(n)
+create a queue to store each element of the BSTSet,
+perform deque at the front,
+count will be started at the -1 to record an empty set and each time
+the ptr points to the next height(left or right), count will plus1
+*/
+int BSTSet::height()
+{
+    if (root == NULL) return -1;
+
+    std::vector<TNode*> queue;
+    queue.push_back(root);
+
+    int height = -1, count = 0;
+
+    TNode* ptr;
+    while (!queue.empty()) {
+        count = queue.size();
+        height++;
+
+        while (count > 0) {
+            ptr = queue.front();
+            queue.erase(queue.begin());
+            if (ptr->left != NULL) queue.push_back(ptr->left);
+            if (ptr->right != NULL) queue.push_back(ptr->right);
+            count--;
+        }
+    }
+    return height;
+}
+
+// create and use class MyStack
+void BSTSet::printNonRec()
+{
+    if (root == NULL) {
+        std::cout << "";
+        return;
+    }
+
+    Stack<TNode*> stack;
+    stack.push(root);
+
+    TNode* ptr = root->left;
+
+    while (1) {
+        while (ptr) {
+            stack.push(ptr);
+            ptr = ptr->left;
+        }
+        if (!stack.isEmpty()) {
+            ptr = stack.pop();
+            std::cout << ptr->element << ",";
+            ptr = ptr->right;
+        }
+        else {
+            break;
+        }
+    }
+}
+
+// Do not modify following provided methods
+
+void BSTSet::printBSTSet()
+{
+    if (root == NULL)
+        std::cout << "";
+    else {
+        printBSTSet(root);
+    }
+}
+
+void BSTSet::printBSTSet(TNode* t)
+{
+    if (t != NULL) {
+        printBSTSet(t->left);
+        std::cout << t->element << ",";
+        printBSTSet(t->right);
+    }
+}

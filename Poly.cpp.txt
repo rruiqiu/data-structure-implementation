@@ -1,0 +1,225 @@
+#include "Poly.h"
+/*
+create the zero polynomial with degree equal to 1
+*/
+Poly::Poly()
+{
+	head = new PolyNode(-1, 0.0, NULL); 
+}
+
+/*
+create a zero polynomial first 
+
+*/
+Poly::Poly(const std::vector<int>& deg, const std::vector<double>& coeff)
+{
+	//time complexity θ(n)
+	head = new PolyNode(-1, 0.0, NULL); 
+	PolyNode* temp = head;
+	for (int i = 0; i < deg.size(); i++) {
+		temp->next = new PolyNode(deg[i], coeff[i], NULL);
+		temp = temp->next;
+	}
+}
+
+/*
+free the memory
+*/
+Poly::~Poly()
+{
+	//time complexity θ(n)
+	PolyNode* temp = head;
+	PolyNode* del;
+	while (head->next != NULL) { //iterate the list to the end of polynomial
+		del = head->next;
+		head->next = head->next->next;
+		delete del;
+	}
+}
+
+
+/*
+Perform Single Polynomial Addition
+*/
+void Poly::addMono(int i, double c)
+{
+	////time complexity θ(n)
+	PolyNode* ptr1 = head;
+	while (1) {
+		if (ptr1->next == NULL) {//Polynomial plus 0
+			ptr1->next = new PolyNode(i, c, NULL);
+			break;
+		}
+		else if (ptr1->next->deg == i) {//When degree equals: coeff is the total sum
+			ptr1->next->coeff += c;
+			break;
+		}
+		else if (ptr1->next->deg < i) { //When  degree is smaller than the previous, insert to its next location
+			PolyNode* x = new PolyNode(i, c, ptr1->next);
+			ptr1->next = x;
+			break;
+		}
+		else{ //When degree is the highest, insert to the front
+			ptr1 = ptr1->next;
+		}
+	}
+	
+	ptr1 = head;
+	PolyNode* del;
+	while (ptr1->next != NULL) {
+		if (ptr1->next->coeff == 0.0) {//check if the coefficient is zero, delete its memory if yes
+			del = ptr1->next;
+			ptr1->next = ptr1->next->next;
+			delete del;
+			break;
+		}
+		else {
+			ptr1 = ptr1->next;
+		}
+	}
+
+
+
+}
+
+/*
+Add this polynomial P to the polynomial
+*/
+void Poly::addPoly(const Poly& p)
+{
+	//time complexity θ(n^2)
+	PolyNode* temp = p.head;
+	while (temp->next != NULL) {
+		addMono(temp->next->deg, temp->next->coeff);
+		temp = temp->next;
+	}
+}
+
+/*
+Multiply this polynomial with a monopolynomial
+*/
+void Poly::multiplyMono(int i, double c)
+{
+	//time complexity θ(n)
+	PolyNode* ptr1 = head;
+	if (c == 0.0) {
+		ptr1->next = NULL;
+	}else{
+		while (ptr1->next != NULL) {
+			ptr1->next->deg += i;
+			ptr1->next->coeff *= c;
+			ptr1 = ptr1->next;
+		}
+	}
+
+}
+
+/*
+multiplies this polynomial by polynomial p. 
+The method modifies this polynomial, but it does not modify polynomial p.
+*/
+void Poly::multiplyPoly(const Poly& p)
+{
+	//time complexity θ(n^5)
+	Poly sum;
+	Poly copy;
+	PolyNode* ptr1 = p.head;
+	while (ptr1->next != NULL){
+		ptr1 = ptr1->next;
+		//copy = *(new Poly());
+		duplicate(copy); //copy this polynomial to copy
+		copy.multiplyMono(ptr1->deg, ptr1->coeff); //each node perform multiplication with copy
+		sum.addPoly(copy);//add the temp mulitplication the sum
+	}
+
+	//reassign this polynomial to a zero polynomial
+	head = new PolyNode(-1, 0.0, NULL);
+	PolyNode* temp = head;
+	while (temp->next != NULL) {
+		temp->next = new PolyNode(-1, 0.0, NULL);
+		temp = NULL;
+		break;
+	}
+	addPoly(sum);//add the multiplication to this polynomial
+}
+
+
+/*
+Copy this Polynomial to outputPoly
+*/
+void Poly::duplicate(Poly& outputPoly)
+{
+	//time complexity θ(n)
+	PolyNode* ptr1 = outputPoly.head;
+	PolyNode* ptr2 = head;
+
+	while (ptr2->next != NULL){
+		ptr1->next = new PolyNode(ptr2->next->deg, ptr2->next->coeff, NULL);
+		ptr1 = ptr1->next;
+		ptr2 = ptr2->next;
+	}
+}
+
+/*
+ returns the degree of the polynomial.
+ return -1 if it is an empty list(zero polynomial)
+*/
+int Poly::getDegree()
+{
+	//time complexity θ(1)
+	if (head->next != NULL) {
+		return head->next->deg;
+	}
+	else {
+		return -1;
+	}
+}
+
+/*
+returns the number of non-zero terms of the polynomial
+*/
+int Poly::getTermsNo()
+{
+	//time complexity θ(n)
+	int i = 0;
+	PolyNode* temp = head;
+	while (temp->next != NULL) {
+		i++;
+		temp = temp->next;
+	}
+	return i;
+}
+
+
+/*
+ evaluates the polynomial expression for the value
+x of the variable.
+*/
+double Poly::evaluate(double x)
+{
+	//time complexity θ(n)
+	double result = 0.0;
+	PolyNode* temp = head;
+	while (temp->next != NULL) {
+		temp = temp->next;
+		result += pow(x, temp->deg) * temp->coeff;
+	}
+	return result;
+}
+
+/*
+return a string representation of the polynomial
+*/
+std::string Poly::toString()
+{
+	//time complexity θ(n)
+	std::string result;
+	result += "degree=" + to_string(this->getDegree()) + "; ";
+	PolyNode* temp = head;
+	while (temp->next != NULL) {
+		temp = temp->next;
+		result += "a(" + to_string(temp->deg) + ")=" + to_string(temp->coeff) + "; ";
+	}
+	result += "\n";
+	return result;
+}
